@@ -101,3 +101,29 @@ def parrot(voltage, state='a stiff', action='voom', type='Norwegian Blue'):
     print("if you put", voltage, "volts through it.")
     print("-- Lovely plumage, the", type)
     print("-- It's", state, "!")
+
+
+# Lambda Expressions
+    
+def make_incrementor(n):
+    return lambda x: x + n
+
+f = make_incrementor(42)
+print(f(0))
+
+print(f(1))
+
+
+
+pairs = [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]
+pairs.sort(key=lambda pair: pair[1])
+pairs
+
+pairs = [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]
+pairs.sort(key=lambda pair: pair[1])
+print(pairs)
+
+list(range(3, 6))            # normal call with separate arguments
+
+args = [3, 6]
+list(range(*args))
