@@ -1,5 +1,14 @@
 from collections import deque
 
+# import modules_06 as fibo
+
+# fibonacci = fibo.fib(10)
+# print(fibonacci)
+
+from modules_06 import fib2
+
+print(fib2(10))
+
 fruits = ['orange', 'apple', 'pear', 'banana', 'kiwi', 'apple', 'banana']
 
 #append
@@ -7,6 +16,7 @@ fruits.append('grape')
 print(fruits)
 
 #extend
+
 fruits.extend(('cherry', 'pineapple'))
 print(fruits)
 
