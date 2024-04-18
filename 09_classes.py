@@ -1,3 +1,4 @@
+
 #data_classes------------
 from dataclasses import dataclass
 
@@ -113,3 +114,19 @@ square_generator = (x ** 2 for x in range(1, 6))
 # Iterate over the generator
 for square in square_generator:
     print(square)
+
+
+#class objects ----------
+    
+class Complex:
+    def __init__(self, realpart, imagpart):
+        self.r = realpart
+        self.i = imagpart
+
+x = Complex(3.0, -4.5)
+print(x.r, x.i)
+
+
+
+    
+
