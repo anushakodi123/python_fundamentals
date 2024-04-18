@@ -30,7 +30,7 @@ def play():
                 for position in positions:
                     board_row.append(board[position])
                 if board_row.count('x') == 3:
-                    return print("the winner is player1")
+                    return print("the winner is player1!")
                 board_row = []
 
 
@@ -52,10 +52,11 @@ def play():
                 for position in positions:
                     board_row.append(board[position])
                 if board_row.count('o') == 3:
-                    return print("the winner is player2")
+                    return print("the winner is player2!")
                 board_row = []
 
         chances += 1
+    print("it's a draw!")
 
 
 play()
