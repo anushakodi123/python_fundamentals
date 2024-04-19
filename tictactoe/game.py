@@ -1,65 +1,77 @@
-board = ["", "", "", "", "", "", "", "", ""]
-positions1 = [i for i in range(0, 3, 1)]
-positions2 = [i for i in range(3, 6, 1)]
-positions3 = [i for i in range(6, 9, 1)]
-positions4 = [i for i in range(0, 7, 3)]
-positions5 = [i for i in range(1, 8, 3)]
-positions6 = [i for i in range(2, 9, 3)]
-positions7 = [i for i in range(0, 9, 4)]
-positions8 = [i for i in range(2, 7, 2)]
-winning_positions = [positions1, positions2, positions3, positions4, positions5, positions6, positions7, positions8]
-
-def play():
-    chances = 1
-    while chances <= 3:
-        person1 = int(input("player1, enter the board number from 0-8 "))
-
-        if board[person1] == "":
-            board[person1] = "x"
-            print()
-            print(f"| {board[0]}  |  {board[1]}  |  {board[2]} |")
-            print(f"| {board[3]}  |  {board[4]}  | {board[5]} |")
-            print(f"| {board[6]}  |  {board[7]}  | {board[8]} |")
-            print()
-        else:
-            print("choose another box, its filled already!")
-        
-        if chances == 3:
-            board_row = []
-            for positions in winning_positions:
-                for position in positions:
-                    board_row.append(board[position])
-                if board_row.count('x') == 3:
-                    return print("the winner is player1!")
-                board_row = []
+import abc
+import enum
+import dataclasses as dc
 
 
-        person2 = int(input("player2, enter the board number from 0-8 "))
+class Mark(enum.IntEnum):
+    _ = 0
+    x = 1
+    o = 2
 
-        if board[person2] == "":
-            board[person2] = "o"
-            print()
-            print(f"| {board[0]}  |  {board[1]}  |  {board[2]} |")
-            print(f"| {board[3]}  |  {board[4]}  | {board[5]} |")
-            print(f"| {board[6]}  |  {board[7]}  | {board[8]} |")
-            print()
-        else:
-            print("choose another box, its filled already!")
+    def __repr__(self) -> str:
+        return self._name_
 
-        if chances == 3:
-            board_row = []
-            for positions in winning_positions:
-                for position in positions:
-                    board_row.append(board[position])
-                if board_row.count('o') == 3:
-                    return print("the winner is player2!")
-                board_row = []
-
-        chances += 1
-    print("it's a draw!")
+    def __str__(self) -> str:
+        return repr(self)
 
 
-play()
+@dc.dataclass
+class Game:
+    moves: list["Pick"] = dc.field(default_factory=list)
+    board: list[Mark] = dc.field(default_factory=lambda: [Mark._] * 9)
+
+    def apply(self, action: "Action"):
+        action.execute(self)
+
+    def check(self) -> tuple[bool, Mark]:
+        return True, Mark._
+
+    def __repr__(self) -> str:
+        b = self.board
+        return f"""Board
+        {" ".join(map(repr, b[0:3]))}
+        {" ".join(map(repr, b[3:6]))}
+        {" ".join(map(repr, b[6:9]))}
+        """
 
 
+class Action(abc.ABC):
+    @abc.abstractmethod
+    def execute(self, game: Game): ...
 
+
+class Undo(Action):
+    def execute(self, game: Game): ...
+
+
+@dc.dataclass
+class Pick(Action):
+    tile: int
+
+    def execute(self, game: Game):
+        b = game.board
+        n_marked_tiles = sum(Mark._ != _ for _ in b)
+        n_even_marked_tiles = n_marked_tiles % 2 == 0
+        b[self.tile] = Mark.x if n_even_marked_tiles else Mark.o
+
+
+def main():
+    game = Game()
+    print(game)
+    picks = [0, 3, 7, 1]
+    picks = map(Pick, picks)
+    for pick in picks:
+        game.apply(pick)
+        print(pick.tile)
+        print(game)
+        ended, winner = game.check()
+        if ended:
+            if w := winner:
+                print(f"{w} won!")
+            else:
+                print("tie!")
+            break
+
+
+if __name__ == "__main__":
+    main()
