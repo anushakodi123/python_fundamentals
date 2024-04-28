@@ -1,4 +1,8 @@
 import enum
+import pickle
+import os
+import abc
+from dataclasses import dataclass, field
 
 
 class Mark(enum.IntEnum):
@@ -9,17 +13,20 @@ class Mark(enum.IntEnum):
     def __repr__(self) -> str:
         return self._name_
 
+    def __str__(self) -> str:
+        return self._name_
 
+
+@dataclass
 class Game:
-    def __init__(self, filled_tiles):
-        self.board = [Mark._ for _ in range(9)]
-        self.filled_tiles = filled_tiles
+    board: list = field(default_factory=lambda: [Mark._ for _ in range(9)])
+    filled_tiles: list = field(default_factory=list)
 
     def __repr__(self) -> str:
         b = self.board
         return f"""Board
         {" ".join(map(repr, b[0:3]))}
-        {" ".join(map(repr, b[3:6]))}
+        {" ".join(map(repr, b[3:6]))}   
         {" ".join(map(repr, b[6:9]))}
         """
 
@@ -54,46 +61,105 @@ class Game:
     def marked_tiles(self):
         return sum(Mark._ != _ for _ in self.board)
 
-    def update_board(self, tile: int):
-        b = self.board
-        if b[tile] == Mark._:
-            no_of_marked_tiles = self.marked_tiles()
+    def apply(self, action: "Action"):
+        return action.execute(self)
+
+
+class Action(abc.ABC):
+    @abc.abstractmethod
+    def execute(self, game: Game): ...
+
+
+@dataclass
+class Update(Action):
+    tile: int
+
+    def execute(self, game: Game):
+        b = game.board
+        if b[self.tile] == Mark._:
+            no_of_marked_tiles = game.marked_tiles()
             n_even_marked_tiles = no_of_marked_tiles % 2 == 0
-            b[tile] = repr(Mark.x) if n_even_marked_tiles else repr(Mark.o)
-            self.filled_tiles.append(tile)
-            print(self)
+            b[self.tile] = repr(Mark.x) if n_even_marked_tiles else repr(Mark.o)
+            game.filled_tiles.append(self.tile)
+            print(game)
         else:
             print("tile already picked")
 
-    def undo(self):
-        if self.marked_tiles() != 0:
-            self.board[self.filled_tiles[-1]] = Mark._
-            self.filled_tiles.pop()
-            print(self)
+
+class Undo(Action):
+    def execute(self, game: Game):
+        if game.marked_tiles() != 0:
+            game.board[game.filled_tiles[-1]] = Mark._
+            game.filled_tiles.pop()
+            print(game)
         else:
             print("cant undo")
 
 
+class FileStore(Action):
+    def execute(self, game: Game):
+        b = game.board
+        print("gameee", b)
+        with open("tiles", "wb") as f:
+            pickle.dump(b, f)
+
+
+class FileRead(Action):
+    def execute(self, game: Game):
+        with open("tiles", "rb") as f:
+            listt = pickle.load(f)
+            print("mainnnnn", listt)
+            return listt
+
+
+class FileDelete(Action):
+    def execute(self, game: Game):
+        file_path = "tiles"
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print("File deleted...")
+
+
 class main:
-    filled_tiles = []
-    game = Game(filled_tiles)
+    game = Game()
     print(game)
+    file_path = "tiles"
+    print("2222222", os.path.exists(file_path))
+    if os.path.exists(file_path):
+        print("fileeee", game.apply(FileRead()))
+        game.board = game.apply(FileRead())
+        print("updated here too", game.board)
     while True:
         input1 = int(input("pick a tile "))
         if input1 == -1:
-            game.undo()
+            game.apply(Undo())
+        elif input1 == -2:
+            game.apply(FileStore())
+            print("exiting out of the game...")
+            break
         else:
-            game.update_board(input1)
+            action = Update(tile=input1)
+            game.apply(action)
 
         x_winner = game.is_winner("x")
         o_winner = game.is_winner("o")
         is_draw = game.is_draw()
+
         if x_winner:
             print("x is the winner")
+            game.apply(FileDelete())
             break
-        if o_winner:
+        elif o_winner:
             print("o is the winner")
+            game.apply(FileDelete())
             break
-        if is_draw:
+        elif is_draw:
             print("its a draw")
+            game.apply(FileDelete())
             break
+        else:
+            game.apply(FileStore())
+
+
+if __name__ == "__main__":
+    main()
