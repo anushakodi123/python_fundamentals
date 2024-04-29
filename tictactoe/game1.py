@@ -99,7 +99,6 @@ class Undo(Action):
 class FileStore(Action):
     def execute(self, game: Game):
         b = game.board
-        print("gameee", b)
         with open("tiles", "wb") as f:
             pickle.dump(b, f)
 
@@ -108,7 +107,6 @@ class FileRead(Action):
     def execute(self, game: Game):
         with open("tiles", "rb") as f:
             listt = pickle.load(f)
-            print("mainnnnn", listt)
             return listt
 
 
@@ -122,13 +120,12 @@ class FileDelete(Action):
 
 class main:
     game = Game()
-    print(game)
     file_path = "tiles"
-    print("2222222", os.path.exists(file_path))
+    if not os.path.exists(file_path):
+        print(game)
     if os.path.exists(file_path):
-        print("fileeee", game.apply(FileRead()))
         game.board = game.apply(FileRead())
-        print("updated here too", game.board)
+        print(game)
     while True:
         input1 = int(input("pick a tile "))
         if input1 == -1:
