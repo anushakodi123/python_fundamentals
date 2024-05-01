@@ -1,8 +1,9 @@
 import enum
-import pickle
-import os
+import io
 import abc
-from dataclasses import dataclass, field
+import dataclasses as dc
+import sqlite3
+# import json
 
 
 class Mark(enum.IntEnum):
@@ -17,10 +18,10 @@ class Mark(enum.IntEnum):
         return self._name_
 
 
-@dataclass
+@dc.dataclass
 class Game:
-    board: list = field(default_factory=lambda: [Mark._ for _ in range(9)])
-    filled_tiles: list = field(default_factory=list)
+    board: list = dc.field(default_factory=lambda: [Mark._ for _ in range(9)])
+    filled_tiles: list = dc.field(default_factory=list)
 
     def __repr__(self) -> str:
         b = self.board
@@ -30,7 +31,7 @@ class Game:
         {" ".join(map(repr, b[6:9]))}
         """
 
-    def is_winner(self, player):
+    def is_winner(self, player: Mark) -> bool:
         b = self.board
         if b[0] == b[1] == b[2] == player:
             return True
@@ -70,7 +71,7 @@ class Action(abc.ABC):
     def execute(self, game: Game): ...
 
 
-@dataclass
+@dc.dataclass
 class Update(Action):
     tile: int
 
@@ -79,7 +80,7 @@ class Update(Action):
         if b[self.tile] == Mark._:
             no_of_marked_tiles = game.marked_tiles()
             n_even_marked_tiles = no_of_marked_tiles % 2 == 0
-            b[self.tile] = repr(Mark.x) if n_even_marked_tiles else repr(Mark.o)
+            b[self.tile] = Mark.x if n_even_marked_tiles else Mark.o
             game.filled_tiles.append(self.tile)
             print(game)
         else:
@@ -96,66 +97,92 @@ class Undo(Action):
             print("cant undo")
 
 
-class FileStore(Action):
+class StorageDriver(abc.ABC):
+    @abc.abstractmethod
+    def store_move(self, update: Update): ...
+    @abc.abstractmethod
+    def read_moves(self) -> list[Update]: ...
+    @abc.abstractmethod
+    def undo_move(self): ...
+    def delete_moves(self): ...
+
+
+@dc.dataclass
+class StoreDB(StorageDriver):
+    def __post_init__(self):
+        self.con = sqlite3.connect("tictactoe.db")
+        self.cur = self.con.cursor()
+        self.cur.execute(
+            "CREATE TABLE IF NOT EXISTS moves(id INTEGER PRIMARY KEY, tile INTEGER)"
+        )
+        self.con.commit()
+
+    def store_move(self, update: Update):
+        self.cur.execute("INSERT INTO moves(tile) VALUES (?)", (update.tile,))
+        self.con.commit()
+
+    def read_moves(self) -> list[Update]:
+        res = self.cur.execute("SELECT tile FROM moves")
+        moves = res.fetchall()
+        print("fetchingg", moves)
+        print("listttt", [Update(move[0]) for move in moves])
+        return [Update(move[0]) for move in moves]
+
+    def undo_move(self):
+        self.cur.execute("DELETE FROM moves WHERE id = (SELECT MAX(id) FROM moves)")
+        self.con.commit()
+
+    def delete_moves(self):
+        self.cur.execute("DELETE FROM moves")
+        self.con.commit()
+
+
+@dc.dataclass
+class DBUpdate(Action):
+    sd: StoreDB
+    update: Update
+
     def execute(self, game: Game):
-        b = game.board
-        with open("tiles", "wb") as f:
-            pickle.dump(b, f)
+        self.sd.store_move(self.update)
+        self.update.execute(game)
 
 
-class FileRead(Action):
+@dc.dataclass
+class DBUndo(Action):
+    sd: StoreDB
+    undo: Undo
+
     def execute(self, game: Game):
-        with open("tiles", "rb") as f:
-            listt = pickle.load(f)
-            return listt
+        self.sd.undo_move()
+        self.undo.execute(game)
 
 
-class FileDelete(Action):
-    def execute(self, game: Game):
-        file_path = "tiles"
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print("File deleted...")
-
-
-class main:
+def main():
     game = Game()
-    file_path = "tiles"
-    if not os.path.exists(file_path):
-        print(game)
-    if os.path.exists(file_path):
-        game.board = game.apply(FileRead())
-        print(game)
+
+    sd = StoreDB()
+    for update in sd.read_moves():
+        game.apply(update)
+
     while True:
         input1 = int(input("pick a tile "))
         if input1 == -1:
-            game.apply(Undo())
-        elif input1 == -2:
-            game.apply(FileStore())
-            print("exiting out of the game...")
-            break
+            action = DBUndo(sd, Undo())
         else:
-            action = Update(tile=input1)
-            game.apply(action)
-
-        x_winner = game.is_winner("x")
-        o_winner = game.is_winner("o")
-        is_draw = game.is_draw()
-
-        if x_winner:
+            action = DBUpdate(sd, Update(tile=input1))
+        game.apply(action)
+        if game.is_winner(Mark.x):
             print("x is the winner")
-            game.apply(FileDelete())
+            sd.delete_moves()
             break
-        elif o_winner:
+        elif game.is_winner(Mark.o):
             print("o is the winner")
-            game.apply(FileDelete())
+            sd.delete_moves()
             break
-        elif is_draw:
+        elif game.is_draw():
             print("its a draw")
-            game.apply(FileDelete())
+            sd.delete_moves()
             break
-        else:
-            game.apply(FileStore())
 
 
 if __name__ == "__main__":
