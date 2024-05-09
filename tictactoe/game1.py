@@ -3,6 +3,7 @@ import abc
 import dataclasses as dc
 import sqlite3
 # import json
+import typer
 
 
 class Mark(enum.IntEnum):
@@ -95,7 +96,6 @@ class Undo(Action):
         else:
             print("cant undo")
 
-
 class StorageDriver(abc.ABC):
     @abc.abstractmethod
     def store_move(self, update: Update): ...
@@ -172,8 +172,21 @@ class DBUndo(Action):
         self.undo.execute(game)
 
 
-def main():
+class InputReader(abc.ABC):
+    @abc.abstractclassmethod
+    def read_input(Self) -> str: ...
+
+
+class StdInReader(InputReader):
+    def read_input(self, msg="") -> str:
+        return input(msg)
+
+app = typer.Typer()
+
+@app.command()
+def play(game_id: int = None):
     game = Game()
+    input_reader = StdInReader()
 
     connection = sqlite3.connect("tictactoe.db")
     cursor = connection.cursor()
@@ -183,9 +196,11 @@ def main():
     if not row == []:
         cursor.execute("SELECT MAX(id) FROM game")
     res = cursor.fetchone()
-    input2 = input(
-        "Do you want to continue(give game number) the game or start a new one(Y) "
-    )
+    if game_id is None:
+        input2 = "Y"
+    else:
+        input2 = str(game_id)
+
     if input2.isnumeric():
         sd = StoreDB(connection, int(input2))
         for update in sd.read_moves():
@@ -196,7 +211,7 @@ def main():
         sd = StoreDB(connection, 1)
 
     while True:
-        input1 = int(input("pick a tile "))
+        input1 = int(input_reader.read_input("pick a tile "))
         if input1 == -1:
             action = DBUndo(sd, Undo())
         else:
@@ -217,4 +232,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()
