@@ -1,3 +1,5 @@
+import base64
+
 # Define a bunch of variables holding values with the datatypes `int`, `str`, `float`, `complex`, `bool`, `NoneType`, `tuple[int]`, `list[str]`, `dict[str, int]`, and `set[tuple[float]]`.
 
 a = 1
@@ -40,8 +42,8 @@ print(tax)
 print(total_bill)
 
 
+# Define a function `letter_frequency` that takes in an argument called `word` of type `str` and returns a mapping of each letter in word to its number of occurrences i.e. `dict[str, int]`.
 
-#Define a function `letter_frequency` that takes in an argument called `word` of type `str` and returns a mapping of each letter in word to its number of occurrences i.e. `dict[str, int]`.
 
 def letter_frequency(word: str) -> dict:
     word_count = {}
@@ -52,4 +54,64 @@ def letter_frequency(word: str) -> dict:
         word_count[i] = word.lower().count(i)
     return word_count
 
+
 print(letter_frequency("Andrea"))
+
+
+# List all the builtins functions and use it in code samples. i.e. `print("Hi, there!")`.
+
+a = [1, 2, 3, 4]
+print(len(a))
+print(type(a))
+print(sum(a))
+print(max(a))
+print(min(a))
+b = ("a", "b", "c")
+c = (1, 2, 3, 4)
+print(tuple(zip(b, c)))
+print(list(c))
+
+# Store the sentence – 'The quick brown fox jumps over the lazy dog' – in base64 in a file and then read from, decode into utf-8 and print on screen.
+a = "The quick brown fox jumps over the lazy dog"
+encoded_sentence = base64.b64encode(a.encode("utf-8"))
+
+with open("encoded_sentence.txt", "wb") as file:
+    file.write(encoded_sentence)
+
+with open("encoded_sentence.txt", "rb") as file:
+    encoded_sentence = file.read()
+
+decoded_sentence = base64.b64decode(encoded_sentence).decode("utf-8")
+
+print(decoded_sentence)
+
+
+# Design a decorator, add(n: int), such that it will always add n to any int/float-returning function.
+# For instance, design add such that the following code snippet does not fail
+
+# add(3)
+# def subtract(a: int, b: int):
+#     return a - b
+
+# assert subtract(10, 6) == 7
+
+
+def add(a: int) -> int:
+    def wrapper(func):
+        def adding(*args, **kwargs):
+            result = func(*args, **kwargs)
+            return result + a
+
+        return adding
+
+    return wrapper
+
+
+@add(3)
+def subtract(a: int, b: int) -> int:
+    return a - b
+
+
+print(subtract(10, 3))
+
+
