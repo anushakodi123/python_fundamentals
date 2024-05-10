@@ -79,12 +79,12 @@ customer3 = Customer("Xavier", (0, -2), ["Coke", "Omlette", "Wrap"])
 customer4 = Customer("Wiona", (6, 0), ["Burger", "Coke"])
 
 restaurants = [restaurant1, restaurant2, restaurant3]
+customers = [customer1, customer2, customer3, customer4]
 
+for customer in customers:
+    restaurants_distance = [{restaurant.name : restaurant.calculate_distance(customer)} for restaurant in restaurants]
+    min_func = lambda d: min(d.values())
+    min_dict = min(restaurants_distance, key = min_func)
+    min_key = min(min_dict, key=min_dict.get)
+    print(f"{customer.name} min distance restaurant:", min_key)
 
-restaurants_distance = [{restaurant.name : restaurant.calculate_distance(customer1)} for restaurant in restaurants]
-
-print(restaurants_distance)
-
-
-# min_distance = [x[0] for x in restaurants_distance]
-# print(min(min_distance))
