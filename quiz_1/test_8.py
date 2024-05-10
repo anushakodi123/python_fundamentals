@@ -1,3 +1,19 @@
+# Design a class Var and use it as a context-manager so that the following snippet works.
+
+# r = 20
+# with Var(r) as x:
+#     x + 5
+#     x * 12
+#     x - 3
+#     x / 3
+#     x + 1
+
+# assert x == 0
+# Hint: User operator-overloading on a custom class inheriting from int.
+# Try the same snippet one more time with r = 40 and find x.
+
+
+
 class Var(int):
     def __enter__(self):
         return self
